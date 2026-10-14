@@ -2,39 +2,67 @@
 safety_logic.py - Safety features, location simulation, SOS, and self-defense tips
 """
 
-import random
-import math
+import json
+import urllib.error
+import urllib.request
 from datetime import datetime
 
 # ─────────────────────────────────────────────
-#  LOCATION SIMULATION
-#  (Replace get_current_location() with a real
-#   GPS library like gpsd or geopy if available)
+#  APPROXIMATE LOCATION VIA PUBLIC IP
 # ─────────────────────────────────────────────
-
-# Simulated base coordinates (New Delhi, India as default)
-_BASE_LAT = 28.6139
-_BASE_LON = 77.2090
-
 
 def get_current_location() -> dict:
     """
-    Simulate GPS location with slight random drift.
-    In a real deployment, replace this with actual GPS/IP geolocation.
-    Returns dict with latitude, longitude, and address string.
-    """
-    lat = _BASE_LAT + random.uniform(-0.005, 0.005)
-    lon = _BASE_LON + random.uniform(-0.005, 0.005)
+    Return approximate IP-based location from ipapi.co.
 
-    # Simulated address – replace with reverse geocoding API call
-    address = f"Near Connaught Place, New Delhi ({lat:.4f}°N, {lon:.4f}°E)"
-    return {
-        "latitude": round(lat, 6),
-        "longitude": round(lon, 6),
-        "address": address,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "maps_link": f"https://maps.google.com/?q={lat},{lon}"
+    This is NOT device GPS and may be inaccurate (especially with VPNs,
+    mobile networks, or corporate networks). The provider receives the
+    requester's public IP address. If the service/network is unavailable,
+    return an explicit unavailable result rather than inventing coordinates.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    result = {
+        "latitude": None,
+        "longitude": None,
+        "address": "Location unavailable. Check internet access and try again.",
+        "timestamp": timestamp,
+        "maps_link": None,
+        "source": "unavailable",
+        "accuracy": "unknown",
     }
+    request = urllib.request.Request(
+        "https://ipapi.co/json/",
+        headers={"User-Agent": "GirlsSafetyHealthAssistant/1.0"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        lat = data.get("latitude")
+        lon = data.get("longitude")
+        if lat is None or lon is None:
+            return result
+
+        lat, lon = float(lat), float(lon)
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return result
+
+        parts = [data.get("city"), data.get("region"), data.get("country_name")]
+        address = ", ".join(str(part) for part in parts if part)
+        if not address:
+            address = "Approximate area from public IP"
+
+        return {
+            "latitude": round(lat, 6),
+            "longitude": round(lon, 6),
+            "address": address + " (approximate IP location, not GPS)",
+            "timestamp": timestamp,
+            "maps_link": f"https://maps.google.com/?q={lat},{lon}",
+            "source": "ip",
+            "accuracy": "approximate; may be city-level",
+        }
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, json.JSONDecodeError):
+        return result
 
 
 # ─────────────────────────────────────────────
@@ -46,10 +74,12 @@ def compose_sos_message(user_name: str, location: dict) -> str:
     return (
         f"🚨 EMERGENCY SOS ALERT 🚨\n\n"
         f"I NEED HELP! My name is {user_name}.\n"
-        f"📍 My current location:\n"
+        f"📍 Location:\n"
         f"   {location['address']}\n"
-        f"   Coordinates: {location['latitude']}, {location['longitude']}\n"
-        f"   Google Maps: {location['maps_link']}\n\n"
+        + (f"   Coordinates: {location['latitude']}, {location['longitude']}\n"
+           f"   Google Maps: {location['maps_link']}\n" if location.get("latitude") is not None
+           else "   Coordinates unavailable; no location link was generated.\n")
+        + "\n"
         f"⏰ Message prepared at: {location['timestamp']}\n\n"
         f"⚠️ This app currently prepares an SOS message; it does NOT send SMS/calls automatically.\n\n"
         f"Please contact me or call the police immediately!\n"
@@ -61,10 +91,11 @@ def compose_share_location_message(user_name: str, location: dict) -> str:
     """Compose a location-sharing message (non-emergency)."""
     return (
         f"📍 Location Update from {user_name}\n\n"
-        f"⚠️ Location shown by this prototype is simulated, not live GPS.\n\n"
-        f"I'm currently at:\n"
+        f"⚠️ This is approximate IP-based location, not live GPS.\n\n"
+        f"Reported area:\n"
         f"   {location['address']}\n"
-        f"   View on Maps: {location['maps_link']}\n\n"
+        + (f"   View on Maps: {location['maps_link']}\n\n" if location.get("maps_link")
+           else "   Map link unavailable.\n\n")
         f"Time: {location['timestamp']}"
     )
 
