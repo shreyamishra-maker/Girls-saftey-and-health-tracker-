@@ -498,8 +498,8 @@ class DashboardPage(tk.Frame):
         sos_f.pack(fill="x", padx=30, pady=8)
         tk.Label(sos_f, text="🚨 Emergency SOS", font=FONT_H2,
                  bg="#3D0A0A", fg="#FF6666").pack(anchor="w", padx=16, pady=(12, 4))
-        tk.Label(sos_f, text="Tap the button below to instantly alert all your emergency contacts\n"
-                 "with your current location.",
+        tk.Label(sos_f, text="Prepare an SOS message with approximate IP-based location.\n"
+                 "This desktop app does not automatically send SMS or place calls.",
                  font=FONT_BODY, bg="#3D0A0A", fg=C["text"], wraplength=550).pack(anchor="w", padx=16)
 
         btn_row = tk.Frame(sos_f, bg="#3D0A0A")
@@ -585,13 +585,13 @@ class DashboardPage(tk.Frame):
         db.log_sos(uid, loc["latitude"], loc["longitude"], loc["address"])
         contacts = db.get_contacts(uid)
 
-        win = _dialog_window(self, "🚨 SOS ALERT SENT", w=520, h=480)
+        win = _dialog_window(self, "🚨 SOS MESSAGE PREVIEW", w=520, h=480)
         win.configure(bg="#1A0000")
 
-        tk.Label(win, text="🚨 SOS ALERT SENT!", font=("Georgia", 18, "bold"),
+        tk.Label(win, text="🚨 SOS MESSAGE PREVIEW", font=("Georgia", 18, "bold"),
                  bg="#1A0000", fg=C["danger"]).pack(pady=(20, 8))
         if contacts:
-            tk.Label(win, text=f"Alerted {len(contacts)} contact(s):",
+            tk.Label(win, text=f"{len(contacts)} saved emergency contact(s) (not contacted automatically):",
                      font=FONT_BODY, bg="#1A0000", fg=C["text"]).pack()
             for c in contacts:
                 tk.Label(win, text=f"  📞 {c['name']} ({c['phone']})",
@@ -600,7 +600,7 @@ class DashboardPage(tk.Frame):
             tk.Label(win, text="⚠ No contacts added yet!",
                      font=FONT_BODY, bg="#1A0000", fg=C["warning"]).pack()
 
-        tk.Label(win, text="\nMessage that would be sent:",
+        tk.Label(win, text="\nMessage preview (not sent):",
                  font=FONT_SMALL, bg="#1A0000", fg=C["text_muted"]).pack()
         _, txt = scrollable_text(win, height=10, width=54)
         txt.pack_forget()
@@ -872,11 +872,21 @@ class DashboardPage(tk.Frame):
         ).pack(anchor="w", padx=16, pady=(0, 12))
 
     def _fetch_location(self):
+        self._loc_label.config(text="Checking approximate location from your public IP…")
         loc = safety.get_current_location()
+        if loc.get("latitude") is None:
+            self._loc_label.config(
+                text=f"⚠️ {loc['address']}\n"
+                     "No coordinates were returned. This may be due to no internet access "
+                     "or the location service being unavailable.\n"
+                     f"⏰ Checked: {loc['timestamp']}"
+            )
+            return
         self._loc_label.config(
             text=f"📍 {loc['address']}\n"
-                 f"🌐 Coordinates: {loc['latitude']}, {loc['longitude']}\n"
+                 f"🌐 Approximate coordinates: {loc['latitude']}, {loc['longitude']}\n"
                  f"🔗 Maps: {loc['maps_link']}\n"
+                 f"ℹ️ Source: public IP lookup (not GPS; may be city-level)\n"
                  f"⏰ Updated: {loc['timestamp']}"
         )
 
@@ -889,8 +899,9 @@ class DashboardPage(tk.Frame):
             return
         names = ", ".join(c["name"] for c in contacts)
         messagebox.showinfo(
-            "Location Shared",
-            f"Location sent to: {names}\n\nMessage:\n{msg}"
+            "Location Message Preview",
+            f"Saved contacts (not contacted): {names}\n\n"
+            f"This message has NOT been sent.\n\nMessage:\n{msg}"
         )
 
     # ══════════════════════════
