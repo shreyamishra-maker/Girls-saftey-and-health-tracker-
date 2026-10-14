@@ -864,10 +864,11 @@ class DashboardPage(tk.Frame):
         tk.Label(hist_card, text="ℹ️  About Location Tracking", font=FONT_H3,
                  bg=C["surface"], fg=C["text_muted"]).pack(anchor="w", padx=16, pady=(12, 4))
         tk.Label(hist_card, text=(
-            "• Location is simulated in this desktop app.\n"
-            "• On a real device/mobile, this would use GPS or IP-based geolocation.\n"
-            "• You can integrate 'geopy' or 'gpsd' library for real GPS coordinates.\n"
-            "• Sharing sends the message to your emergency contacts via SMS or WhatsApp."
+            "• Location uses public-IP geolocation and is approximate, not device GPS.\n"
+            "• The lookup sends your public IP address to ipapi.co when requested.\n"
+            "• VPNs and mobile/corporate networks can make the result inaccurate.\n"
+            "• If lookup fails, the app shows unavailable instead of inventing coordinates.\n"
+            "• Location sharing only prepares a message; it does not send SMS or WhatsApp."
         ), font=FONT_BODY, bg=C["surface"], fg=C["text"], justify="left"
         ).pack(anchor="w", padx=16, pady=(0, 12))
 
