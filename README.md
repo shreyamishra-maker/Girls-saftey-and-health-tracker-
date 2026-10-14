@@ -30,7 +30,7 @@ Python 3.8 or higher is required. All libraries used are **part of Python's stan
 | `hashlib` | Salted PBKDF2-HMAC-SHA256 password hashing |
 | `threading` | Background reminder check |
 | `datetime` | Date calculations           |
-| `random`  | Location simulation         |
+| `urllib.request`, `json` | Approximate public-IP location lookup         |
 
 > ✅ **No pip install needed** for basic functionality.
 
@@ -75,7 +75,7 @@ python main_app.py
 - **Medical History Notes** — Add/view/delete personal health notes
 
 ### 📍 Location Tab
-- Simulated GPS location display with coordinates and Google Maps link (not suitable for real emergencies)
+- Approximate public-IP location lookup with coordinates and Google Maps link (not device GPS; not suitable for emergencies)
 - Location sharing message composer for emergency contacts
 
 ### ⏰ Reminders
@@ -96,7 +96,7 @@ python main_app.py
 
 ## ⚠️ Prototype limitations
 
-- Location coordinates are simulated around New Delhi and are not live GPS.
+- Location is estimated from public IP via ipapi.co; it is not device GPS and may only identify a city/region. The service receives the user's public IP when location is requested.
 - SOS and location-sharing functions prepare text only. They do not automatically send SMS, place calls, or notify emergency contacts.
 - Do not rely on this prototype for real-world emergency response until genuine location, delivery, consent, and failure handling are implemented and tested.
 - `safety_app.db` is a runtime data file and should not be committed if it contains real user records. Keep real health and contact information private.
@@ -105,17 +105,8 @@ python main_app.py
 
 ## 🔧 Optional Enhancements (Advanced)
 
-### Real GPS Location
-Install `geopy` for real IP-based location:
-```bash
-pip install geopy
-```
-Then replace `get_current_location()` in `safety_logic.py`:
-```python
-from geopy.geocoders import Nominatim
-geolocator = Nominatim(user_agent="safeher")
-location = geolocator.geocode("your city")
-```
+### Device GPS
+This Tkinter desktop version does not access device GPS. It uses approximate public-IP geolocation via ipapi.co, which requires internet and may be inaccurate. For true device location, integrate a supported operating-system location API or run a mobile app with location permission.
 
 ### SMS Alerts via Twilio
 ```bash
