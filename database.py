@@ -5,6 +5,7 @@ Handles all data storage: users, contacts, health logs, cycle data, notes
 
 import sqlite3
 import hashlib
+import hmac
 import os
 from datetime import datetime
 
@@ -35,12 +36,12 @@ def verify_password(password: str, stored_hash: str) -> bool:
                 "sha256", password.encode("utf-8"),
                 bytes.fromhex(salt_hex), int(iterations)
             )
-            return hashlib.compare_digest(actual, expected)
+            return hmac.compare_digest(actual, expected)
         except (ValueError, TypeError):
             return False
     # Backward compatibility for accounts created before this security update.
     legacy = hashlib.sha256(password.encode("utf-8")).hexdigest()
-    return hashlib.compare_digest(legacy, stored_hash)
+    return hmac.compare_digest(legacy, stored_hash)
 
 
 def initialize_database():
