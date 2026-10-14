@@ -19,8 +19,28 @@ def get_connection():
 
 
 def hash_password(password: str) -> str:
-    """Hash password using SHA-256."""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash passwords with PBKDF2-HMAC-SHA256 and a unique random salt."""
+    salt = os.urandom(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 310_000)
+    return "pbkdf2_sha256$310000$" + salt.hex() + "$" + digest.hex()
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Verify modern PBKDF2 hashes and legacy SHA-256 hashes."""
+    if stored_hash.startswith("pbkdf2_sha256$"):
+        try:
+            _, iterations, salt_hex, digest_hex = stored_hash.split("$", 3)
+            expected = bytes.fromhex(digest_hex)
+            actual = hashlib.pbkdf2_hmac(
+                "sha256", password.encode("utf-8"),
+                bytes.fromhex(salt_hex), int(iterations)
+            )
+            return hashlib.compare_digest(actual, expected)
+        except (ValueError, TypeError):
+            return False
+    # Backward compatibility for accounts created before this security update.
+    legacy = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return hashlib.compare_digest(legacy, stored_hash)
 
 
 def initialize_database():
@@ -147,16 +167,26 @@ def register_user(name, age, email, password, blood_group=""):
 
 
 def login_user(email, password):
-    """Validate login. Returns user row dict or None."""
+    """Validate login and upgrade legacy password hashes after successful login."""
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM users WHERE email=? AND password=?",
-        (email, hash_password(password))
-    )
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email=?", (email,))
+        row = cursor.fetchone()
+        if not row or not verify_password(password, row["password"]):
+            return None
+
+        if not row["password"].startswith("pbkdf2_sha256$"):
+            cursor.execute(
+                "UPDATE users SET password=? WHERE id=?",
+                (hash_password(password), row["id"])
+            )
+            conn.commit()
+            row = cursor.execute("SELECT * FROM users WHERE id=?", (row["id"],)).fetchone()
+
+        return dict(row)
+    finally:
+        conn.close()
 
 
 def get_user(user_id):
