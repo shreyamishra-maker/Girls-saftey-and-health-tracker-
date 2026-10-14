@@ -1,7 +1,6 @@
 # 💗 Girls Safety & Health Assistant
 
-A **Python desktop application** focused on women's safety, health tracking, and emergency support.  
-Built with **Tkinter + SQLite** — no internet required. All data is stored locally.
+A **Python desktop prototype** focused on women's safety, health tracking, and emergency support. Built with **Tkinter + SQLite**. Core features work locally; location is simulated and SOS messages are prepared for display rather than automatically sent.
 
 ---
 
@@ -28,7 +27,7 @@ Python 3.8 or higher is required. All libraries used are **part of Python's stan
 |-----------|-----------------------------|
 | `tkinter` | GUI framework               |
 | `sqlite3` | Local database              |
-| `hashlib` | Password hashing (SHA-256)  |
+| `hashlib` | Salted PBKDF2-HMAC-SHA256 password hashing |
 | `threading` | Background reminder check |
 | `datetime` | Date calculations           |
 | `random`  | Location simulation         |
@@ -64,7 +63,7 @@ python main_app.py
 - Daily rotating health tip
 
 ### 🚨 Safety Tab
-- **SOS Alert Button** — Shows alert message with simulated GPS location
+- **SOS Alert Button** — Prepares an SOS message with simulated coordinates; it does not send SMS/calls automatically
 - **Emergency Contacts** — Add/delete contacts (name, phone, relation)
 - **Fake Call** — Simulate an incoming call to escape uncomfortable situations
 - **Call Contacts** — Displays contact info for quick dialing
@@ -76,7 +75,7 @@ python main_app.py
 - **Medical History Notes** — Add/view/delete personal health notes
 
 ### 📍 Location Tab
-- Simulated GPS location display with coordinates and Google Maps link
+- Simulated GPS location display with coordinates and Google Maps link (not suitable for real emergencies)
 - Location sharing message composer for emergency contacts
 
 ### ⏰ Reminders
@@ -92,6 +91,15 @@ python main_app.py
 ### 👤 Profile
 - View and edit your name, age, blood group
 - All data stored locally in SQLite
+
+---
+
+## ⚠️ Prototype limitations
+
+- Location coordinates are simulated around New Delhi and are not live GPS.
+- SOS and location-sharing functions prepare text only. They do not automatically send SMS, place calls, or notify emergency contacts.
+- Do not rely on this prototype for real-world emergency response until genuine location, delivery, consent, and failure handling are implemented and tested.
+- `safety_app.db` is a runtime data file and should not be committed if it contains real user records. Keep real health and contact information private.
 
 ---
 
@@ -126,8 +134,8 @@ Listen for a keyword like "help" and trigger SOS automatically.
 ## 🔒 Privacy & Security
 
 - All data is stored in **`safety_app.db`** (SQLite) on your local machine
-- Passwords are hashed with **SHA-256** before storage
-- No data is ever transmitted to any server
+- Passwords use **salted PBKDF2-HMAC-SHA256**; legacy SHA-256 hashes are upgraded after a successful login
+- This prototype stores app data locally in SQLite; avoid committing real user data or the live database file to a public repository
 - Delete `safety_app.db` to completely wipe all data
 
 ---
