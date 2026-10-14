@@ -50,7 +50,8 @@ def compose_sos_message(user_name: str, location: dict) -> str:
         f"   {location['address']}\n"
         f"   Coordinates: {location['latitude']}, {location['longitude']}\n"
         f"   Google Maps: {location['maps_link']}\n\n"
-        f"⏰ Alert sent at: {location['timestamp']}\n\n"
+        f"⏰ Message prepared at: {location['timestamp']}\n\n"
+        f"⚠️ This app currently prepares an SOS message; it does NOT send SMS/calls automatically.\n\n"
         f"Please contact me or call the police immediately!\n"
         f"India Emergency: 112 | Women Helpline: 1091"
     )
@@ -60,6 +61,7 @@ def compose_share_location_message(user_name: str, location: dict) -> str:
     """Compose a location-sharing message (non-emergency)."""
     return (
         f"📍 Location Update from {user_name}\n\n"
+        f"⚠️ Location shown by this prototype is simulated, not live GPS.\n\n"
         f"I'm currently at:\n"
         f"   {location['address']}\n"
         f"   View on Maps: {location['maps_link']}\n\n"
